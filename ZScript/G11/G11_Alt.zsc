@@ -57,7 +57,7 @@ class HDG11Rifle_Scoped:HDWeapon{
 			}else if(nextmagloaded<1){
 				sb.drawimage("G11EMPTY",(-46,-3),sb.DI_SCREEN_CENTER_BOTTOM,alpha:nextmagloaded?0.6:1.,scale:(3,3));
 			}else sb.drawbar(
-				"G11NORM","GS1GREY",
+				"G11NORM","G11GREY",
 				nextmagloaded,45,
 				(-46,-3),-1,
 				sb.SHADER_VERT,sb.DI_SCREEN_CENTER_BOTTOM
