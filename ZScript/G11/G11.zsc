@@ -47,10 +47,11 @@ class HDG11Rifle:HDWeapon{
 	override void DrawHUDStuff(HDStatusBar sb,HDWeapon hdw,HDPlayerPawn hpl){
 		if(sb.hudlevel==1){
 			int nextmagloaded=sb.GetNextLoadMag(hdmagammo(hpl.findinventory("HDG11Mag")));
+			// Change the scale in TEXTURES
 			if(nextmagloaded>=45){
-				sb.drawimage("G11NORM",(-46,-3),sb.DI_SCREEN_CENTER_BOTTOM,scale:(3,3));
+				sb.drawimage("G11NORM",(-46,-3),sb.DI_SCREEN_CENTER_BOTTOM);
 			}else if(nextmagloaded<1){
-				sb.drawimage("G11EMPTY",(-46,-3),sb.DI_SCREEN_CENTER_BOTTOM,alpha:nextmagloaded?0.6:1.,scale:(3,3));
+				sb.drawimage("G11EMPTY",(-46,-3),sb.DI_SCREEN_CENTER_BOTTOM,alpha:nextmagloaded?0.6:1.0);
 			}else sb.drawbar(
 				"G11NORM","G11GREY",
 				nextmagloaded,45,
