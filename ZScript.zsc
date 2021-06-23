@@ -3,7 +3,6 @@ version "4.4"
 //Main
 
 //Melee Weapons
-#include "ZScript/Melee/HDGrossHack.zsc"
 #include "ZScript/Melee/HDFireAxe.zsc"
 #include "ZScript/Melee/HDSledge.zsc"
 #include "ZScript/Melee/HDKnife.zsc"

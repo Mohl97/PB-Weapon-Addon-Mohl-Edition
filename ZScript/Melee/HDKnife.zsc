@@ -10,21 +10,12 @@ class HDStabber:IdleDummy{
 
 const HDLD_KNIFE="knf";
 
-class HDCombatKnife:HD_PB_UnarmedWeapon{
-	int targettimer;
-	int targethealth;
-	int targetspawnhealth;
-	bool flicked;
-	bool washolding;
-	
+class HDCombatKnife:HDFist{
 	default{
-		+WEAPON.MELEEWEAPON +WEAPON.NOALERT +WEAPON.NO_AUTO_SWITCH
 		+hdweapon.fitsinbackpack
 		//-hdweapon.dontnull
-		-weapon.cheatnotweapon
 		-nointeraction
 		-inventory.untossable
-		+forcepain
 		+forceXYbillboard
 		+rollsprite
 		+rollcenter
@@ -33,28 +24,16 @@ class HDCombatKnife:HD_PB_UnarmedWeapon{
 		inventory.pickupmessage "You got the combat knife!";
 		hdweapon.barrelsize 1,1,1;
 		obituary "%o got shanked by %k.";
-		attacksound "*fist";
-		weapon.selectionorder 100;
-		weapon.kickback 120;
-		weapon.bobstyle "Alpha";
-		weapon.bobspeed 2.6;
-		weapon.bobrangex 0.1;
-		weapon.bobrangey 0.5;
 		weapon.slotnumber 1;
 		weapon.slotpriority 2.1;
 		scale 0.6;
 		//+FLATSPRITE
-		DamageFunction (random(100,110));
 		tag "Combat Knife";
 		hdweapon.refid HDLD_KNIFE;
 	}
 	override bool AddSpareWeapon(actor newowner){return AddSpareWeaponRegular(newowner);}
 	override hdweapon GetSpareWeapon(actor newowner,bool reverse,bool doselect){return GetSpareWeaponRegular(newowner,reverse);}
 	
-	override void DrawHUDStuff(HDStatusBar sb,HDWeapon hdw,HDPlayerPawn hpl){
-		let ww=HDCombatKnife(hdw);
-		if(ww.targethealth)sb.drawwepnum(ww.targethealth,ww.targetspawnhealth);
-	}
 	override string gethelptext(){
 		return
 		WEPHELP_FIRE.."  Stab\n"
@@ -73,121 +52,7 @@ class HDCombatKnife:HD_PB_UnarmedWeapon{
 	override double gunmass(){
 		return 6;
 	}
-	
-	action void A_Lunge(){
-		hdplayerpawn hdp=hdplayerpawn(self);
-		if(hdp){
-			if(hdp.fatigue>=30){setweaponstate("hold");return;}
-			else hdp.fatigue+=3;
-		}
-		double overloaded=hdp.CheckEncumbrance();
-		A_Recoil(min(overloaded*0.6,4.)-4.);
-		hdp.overloaded=overloaded;
-	}
 
-		//for throwing a weapon
-	override inventory CreateTossable(int amount){
-	
-		let onr=hdplayerpawn(owner);
-		bool throw=(
-			onr&&(
-				onr.zerk
-				||(
-					onr.player
-					&&onr.player.cmd.buttons&BT_ZOOM
-				)
-			)
-		);
-		bool isreadyweapon=onr&&onr.player&&onr.player.readyweapon==self;
-		if(!isreadyweapon)throw=false;
-		let thrown=super.createtossable(amount);
-		if(!thrown)return null;
-		let newwep=GetSpareWeapon(onr,doselect:isreadyweapon);
-		hdweapon(thrown).bjustchucked=true;
-		thrown.target=onr;
-		if(throw){
-			thrown.bmissile=true;
-			//a_setangle(-90+angle);
-			thrown.bFLATSPRITE=true;
-			thrown.bNOEXTREMEDEATH=true;
-			thrown.bBOUNCEAUTOOFF=true;
-		}else{
-			thrown.bmissile=false;
-			thrown.bFLATSPRITE=false;
-			thrown.bNOEXTREMEDEATH=false;
-			thrown.bBOUNCEAUTOOFF=false;
-			}
-		return thrown;
-	}
-	//an override is needed because DropInventory will undo anything done in CreateTossable
-	double throwvel;
-	override void Tick(){
-		super.Tick();
-		if(bjustchucked)
-		{
-		pitch+=15;
-		}
-		if(bjustchucked&&target){
-			double cp=cos(target.pitch);
-			if(bmissile){
-				vel=target.vel+
-					(cp*cos(target.angle),cp*sin(target.angle),-sin(target.pitch))
-					*min(20,100/weaponbulk())
-					*((hdplayerpawn(target)&&hdplayerpawn(target).zerk>0)?frandom(1,4):1
-				);
-			}else vel=target.vel+2*(cp*cos(target.angle),cp*sin(target.angle),-sin(target.pitch))*2;
-			setz(target.pos.z+target.height-16);
-			throwvel=vel dot vel;
-			bjustchucked=false;
-		}
-		if(owner){
-			if(amount<1){
-				destroy();
-				return;
-			}else{
-				//update count
-				actualamount=1;
-				if(owner&&owner.findinventory("SpareWeapons")){
-					let spw=spareweapons(owner.findinventory("SpareWeapons"));
-					string gcn=getclassname();
-					for(int i=0;i<spw.weapontype.size();i++){
-						if(spw.weapontype[i]==gcn)actualamount++;
-					}
-				}
-			}
-			let onr=hdplayerpawn(owner);
-			if(
-				!bwimpy_weapon
-				&&!hdcombatknife(self)
-				&&onr
-				&&onr.player
-				&&onr.player.readyweapon==self
-				&&!onr.barehanded
-				&&onr.zerk
-				&&(
-					onr.player.cmd.buttons&BT_ATTACK
-					||onr.player.cmd.buttons&BT_ALTATTACK
-					||onr.player.cmd.buttons&BT_ZOOM
-					||bweaponbusy
-					||onr.vel.xy==(0,0)
-				)
-				&&!random(0,511)
-			){
-				onr.A_StartSound(random(0,5)?"*xdeath":"*taunt",CHAN_VOICE);
-				onr.A_AlertMonsters();
-				onr.dropinventory(self);
-			}
-		}
-	}
-
-	override void DoEffect(){
-		super.DoEffect();
-		if(targettimer<70)targettimer++;else{
-			tracer=null;
-			targettimer=0;
-			targethealth=0;
-		}
-	}
 	action void HDStab(int dmg){
 		flinetracedata punchline;
 		bool punchy=linetrace(
@@ -279,130 +144,6 @@ class HDCombatKnife:HD_PB_UnarmedWeapon{
 			invoker.targetspawnhealth=punchee.spawnhealth();
 			invoker.targettimer=0;
 		}
-	}
-	
-	
-	actor grabbed;
-	double grabangle;
-	action void A_CheckGrabbing(){
-		let grabbed=invoker.grabbed;
-		let grabangle=invoker.grabangle;
-
-		//if no grab target, find one
-		if(!grabbed){
-			flinetracedata glt;
-			linetrace(
-				angle,
-				36,
-				pitch,
-				TRF_ALLACTORS,
-				height-18,
-				data:glt
-			);
-			if(!glt.hitactor){
-				A_ClearGrabbing();
-				return;
-			}
-			let grbd=glt.hitactor;
-			grabbed=grbd;
-			grabangle=grbd.angle;
-			invoker.grabangle=grabangle;
-			invoker.grabbed=grbd;
-		}
-		bool resisting=(
-			(
-				grabbed.bismonster
-				&&!grabbed.bnofear&&!grabbed.bghost //*ERPs use both of these flags
-				&&grabbed.health>0
-			)||(
-				grabbed.player
-				&&(
-					!hdplayerpawn(grabbed)
-					||!hdplayerpawn(grabbed).incapacitated
-				)&&(
-					grabbed.player.cmd.forwardmove
-					||grabbed.player.cmd.sidemove
-					||grabbed.player.cmd.pitch
-					||grabbed.player.cmd.yaw
-				)
-			)
-		);
-		bool zerk=(
-			hdplayerpawn(self)
-			&&hdplayerpawn(self).zerk>100
-		);
-		//chance to break away
-		if(resisting){
-			vel+=(frandom(-1,1),frandom(-1,1),frandom(-1,1));
-			let grabbedmass=grabbed.mass;
-			if(random(grabbedmass*0.1,grabbedmass)>random(mass*0.6,mass*(zerk?5:1))){
-				vector2 thrustforce=(cos(angle),sin(angle))*frandom(0.,2.);
-				grabbed.vel.xy+=thrustforce*min(mass/grabbed.mass,1.);
-				vel.xy-=thrustforce;
-				A_ClearGrabbing();
-				return;
-			}
-			if(absangle(angle,grabangle)>10)invoker.grabangle-=frandom(10,20);
-			if(!random(0,7)){
-				grabbed.damagemobj(self,self,1,"Melee");
-				double newgrangle=(grabbed.angle+angle)*0.5;
-				grabbed.angle=newgrangle;
-				invoker.grabangle=newgrangle;
-			}
-		}
-		double massfactor=max(1.,grabbed.mass*(1./200.));
-		if(massfactor>7.){
-			A_ClearGrabbing();
-			return;
-		}
-
-		double grangle=grabbed.angle*2;
-		grabbed.A_SetAngle((grabangle+grangle)*0.333333333333333,SPF_INTERPOLATE);
-
-		//drag
-		double mindist=grabbed.radius+radius;
-
-		double dragfactor=min(0.8,0.8*mass/grabbed.mass);
-		usercmd cmd=player.cmd;
-		int fm=cmd.forwardmove>0?1:cmd.forwardmove<0?-1:0;
-		int sm=cmd.sidemove>0?1:cmd.sidemove<0?-1:0;
-		if(!sm&&fm<0)dragfactor*=1.7;
-
-		vector2 dragmove=rotatevector((dragfactor*fm,-dragfactor*sm),angle)*player.crouchfactor;
-		if(trymove(pos.xy+dragmove,true)){
-			let p=HDPlayerPawn(self);
-			if(p)p.movehijacked=true;
-		}
-
-		let gdst=grabbed.maxstepheight;
-		let gddo=grabbed.bnodropoff;
-		grabbed.maxstepheight=maxstepheight;
-		grabbed.bnodropoff=false;
-		grabbed.trymove(grabbed.pos.xy+dragmove,true);
-		grabbed.maxstepheight=gdst;
-		grabbed.bnodropoff=gddo;
-		grabbed.setz(max(grabbed.pos.z,grabbed.floorz));
-
-		string grbng="dragging ";
-		if(grabbed.bcorpse)grbng=grbng.."corpse";
-		else if(inventory(grabbed)||hdupk(grabbed))grbng=grbng.."item";
-		else grbng=grbng.."object";
-		if(hd_debug)grbng=grbng.."\n"..grabbed.getclassname();
-		A_WeaponMessage(grbng.."...",3);
-
-		if(
-			absangle(angle,angleto(grabbed))>60.
-			||distance3d(grabbed)>(mindist+16)
-		){
-			A_ClearGrabbing();
-			return;
-		}
-		invoker.grabangle=angle;
-	}
-	action void A_ClearGrabbing(){
-		let p=HDPlayerPawn(self);if(p)p.movehijacked=false;
-		invoker.grabbed=null;
-		A_WeaponMessage("");
 	}
 	
 	states{

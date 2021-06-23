@@ -1,13 +1,12 @@
 const HDLD_PS20="ps2";
 
-class HDPS20:HD_PB_UnarmedWeapon{
+class HDPS20:HDFist{
 	default{
 		//$Category "Weapons/Hideous Destructor"
 		//$Title "PS-451"
 		//$Sprite "P20PA0"
 
 		//+weapon.wimpy_weapon
-		-weapon.cheatnotweapon
 		-nointeraction
 		-inventory.untossable
 		+hdweapon.dontdisarm
@@ -29,99 +28,6 @@ class HDPS20:HD_PB_UnarmedWeapon{
 		if(weaponstatus[PS20S_CHAMBER]==2)return string.format("%s It has a charge.",super.pickupmessage());
 		else return string.format("%s It's used.",super.pickupmessage());
 		return super.pickupmessage();
-	}
-	
-		//for throwing a weapon
-	override inventory CreateTossable(int amount){
-		let onr=hdplayerpawn(owner);
-		bool throw=(
-			onr&&(
-				onr.zerk
-				||(
-					onr.player
-					&&onr.player.cmd.buttons&BT_ZOOM
-				)
-			)
-		);
-		bool isreadyweapon=onr&&onr.player&&onr.player.readyweapon==self;
-		if(!isreadyweapon)throw=false;
-		let thrown=super.createtossable(amount);
-		if(!thrown)return null;
-		let newwep=GetSpareWeapon(onr,doselect:isreadyweapon);
-		hdweapon(thrown).bjustchucked=true;
-		thrown.target=onr;
-		if(throw){
-			thrown.bmissile=true;
-			thrown.bBOUNCEONWALLS=true;
-			thrown.bBOUNCEONFLOORS=true;
-			thrown.bALLOWBOUNCEONACTORS=true;
-			thrown.bBOUNCEAUTOOFF=true;
-		}else{
-			thrown.bmissile=false;
-			thrown.bBOUNCEONWALLS=false;
-			thrown.bBOUNCEONFLOORS=false;
-			thrown.bALLOWBOUNCEONACTORS=false;
-			thrown.bBOUNCEAUTOOFF=false;
-		}
-		return thrown;
-	}
-	//an override is needed because DropInventory will undo anything done in CreateTossable
-	double throwvel;
-	override void Tick(){
-		super.Tick();
-		drainheat(PS20S_HEAT,6);
-		
-		if(bjustchucked&&target){
-			double cp=cos(target.pitch);
-			if(bmissile){
-				vel=target.vel+
-					(cp*cos(target.angle),cp*sin(target.angle),-sin(target.pitch))
-					*min(20,1000/weaponbulk())
-					*((hdplayerpawn(target)&&hdplayerpawn(target).zerk>0)?frandom(1,4):1
-				);
-			}else vel=target.vel+2*(cp*cos(target.angle),cp*sin(target.angle),-sin(target.pitch))*2;
-			setz(target.pos.z+target.height-16);
-			throwvel=vel dot vel;
-			bjustchucked=false;
-		}
-		if(owner){
-			if(amount<1){
-				destroy();
-				return;
-			}else{
-				//update count
-				actualamount=1;
-				if(owner&&owner.findinventory("SpareWeapons")){
-					let spw=spareweapons(owner.findinventory("SpareWeapons"));
-					string gcn=getclassname();
-					for(int i=0;i<spw.weapontype.size();i++){
-						if(spw.weapontype[i]==gcn)actualamount++;
-					}
-				}
-			}
-			let onr=hdplayerpawn(owner);
-			if(
-				!bwimpy_weapon
-				&&!hdfist(self)
-				&&onr
-				&&onr.player
-				&&onr.player.readyweapon==self
-				&&!onr.barehanded
-				&&onr.zerk
-				&&(
-					onr.player.cmd.buttons&BT_ATTACK
-					||onr.player.cmd.buttons&BT_ALTATTACK
-					||onr.player.cmd.buttons&BT_ZOOM
-					||bweaponbusy
-					||onr.vel.xy==(0,0)
-				)
-				&&!random(0,511)
-			){
-				onr.A_StartSound(random(0,5)?"*xdeath":"*taunt",CHAN_VOICE);
-				onr.A_AlertMonsters();
-				onr.dropinventory(self);
-			}
-		}
 	}
 	
 	override bool AddSpareWeapon(actor newowner){return AddSpareWeaponRegular(newowner);}

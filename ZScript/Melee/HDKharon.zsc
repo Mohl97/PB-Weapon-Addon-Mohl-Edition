@@ -104,23 +104,15 @@ class HDKharonSparkV:HDKharonSpark
 	
 const HDLD_KHARON="krn";
 
-class HDKharon:HD_PB_UnarmedWeapon{
-	int targettimer;
-	int targethealth;
-	int targetspawnhealth;
-	bool flicked;
-	bool washolding;
+class HDKharon:HDFist{
 	default{
 		//$Category "Weapons/Hideous Destructor"
 		//$Title "Fire Axe"
 		//$Sprite "FAXPA0"
-		+WEAPON.MELEEWEAPON +WEAPON.NOALERT +WEAPON.NO_AUTO_SWITCH
 		+hdweapon.fitsinbackpack
 		//-hdweapon.dontnull
-		-weapon.cheatnotweapon
 		-nointeraction
 		-inventory.untossable
-		+forcepain
 		+forceXYbillboard
 		+rollsprite
 		+rollcenter
@@ -130,12 +122,7 @@ class HDKharon:HD_PB_UnarmedWeapon{
 		weapon.selectionorder 200;
 		weapon.slotpriority 0.75;
 		weapon.kickback 15;
-		weapon.bobstyle "Alpha";
-		weapon.bobspeed 2.6;
 		weapon.bobrangex 0.2;
-		weapon.bobrangey 0.5;
-		weapon.slotnumber 1;
-		DamageFunction (random(40,45));
 		scale 0.75;
 		tag "Replica Kharon";
 		hdweapon.refid HDLD_KHARON;
@@ -143,101 +130,6 @@ class HDKharon:HD_PB_UnarmedWeapon{
 	}
 	override bool AddSpareWeapon(actor newowner){return AddSpareWeaponRegular(newowner);}
 	override hdweapon GetSpareWeapon(actor newowner,bool reverse,bool doselect){return GetSpareWeaponRegular(newowner,reverse);}
-	override void DrawHUDStuff(HDStatusBar sb,HDWeapon hdw,HDPlayerPawn hpl){
-		let ww=HDKharon(hdw);
-		if(ww.targethealth)sb.drawwepnum(ww.targethealth,ww.targetspawnhealth);
-	}
-	
-	//for throwing a weapon
-	override inventory CreateTossable(int amount){
-		let onr=hdplayerpawn(owner);
-		bool throw=(
-			onr&&(
-				onr.zerk
-				||(
-					onr.player
-					&&onr.player.cmd.buttons&BT_ZOOM
-				)
-			)
-		);
-		bool isreadyweapon=onr&&onr.player&&onr.player.readyweapon==self;
-		if(!isreadyweapon)throw=false;
-		let thrown=super.createtossable(amount);
-		if(!thrown)return null;
-		let newwep=GetSpareWeapon(onr,doselect:isreadyweapon);
-		hdweapon(thrown).bjustchucked=true;
-		thrown.target=onr;
-		if(throw){
-			thrown.bmissile=true;
-			thrown.bBOUNCEONWALLS=true;
-			thrown.bBOUNCEONFLOORS=true;
-			thrown.bALLOWBOUNCEONACTORS=true;
-			thrown.bBOUNCEAUTOOFF=true;
-		}else{
-			thrown.bmissile=false;
-			thrown.bBOUNCEONWALLS=false;
-			thrown.bBOUNCEONFLOORS=false;
-			thrown.bALLOWBOUNCEONACTORS=false;
-			thrown.bBOUNCEAUTOOFF=false;
-		}
-		return thrown;
-	}
-	//an override is needed because DropInventory will undo anything done in CreateTossable
-	double throwvel;
-	override void Tick(){
-		super.Tick();
-		if(bjustchucked&&target){
-			double cp=cos(target.pitch);
-			if(bmissile){
-				vel=target.vel+
-					(cp*cos(target.angle),cp*sin(target.angle),-sin(target.pitch))
-					*min(20,1000/weaponbulk())
-					*((hdplayerpawn(target)&&hdplayerpawn(target).zerk>0)?frandom(1,4):1
-				);
-			}else vel=target.vel+2*(cp*cos(target.angle),cp*sin(target.angle),-sin(target.pitch))*2;
-			setz(target.pos.z+target.height-16);
-			throwvel=vel dot vel;
-			bjustchucked=false;
-		}
-		if(owner){
-			if(amount<1){
-				destroy();
-				return;
-			}else{
-				//update count
-				actualamount=1;
-				if(owner&&owner.findinventory("SpareWeapons")){
-					let spw=spareweapons(owner.findinventory("SpareWeapons"));
-					string gcn=getclassname();
-					for(int i=0;i<spw.weapontype.size();i++){
-						if(spw.weapontype[i]==gcn)actualamount++;
-					}
-				}
-			}
-			let onr=hdplayerpawn(owner);
-			if(
-				!bwimpy_weapon
-				&&!hdfist(self)
-				&&onr
-				&&onr.player
-				&&onr.player.readyweapon==self
-				&&!onr.barehanded
-				&&onr.zerk
-				&&(
-					onr.player.cmd.buttons&BT_ATTACK
-					||onr.player.cmd.buttons&BT_ALTATTACK
-					||onr.player.cmd.buttons&BT_ZOOM
-					||bweaponbusy
-					||onr.vel.xy==(0,0)
-				)
-				&&!random(0,511)
-			){
-				onr.A_StartSound(random(0,5)?"*xdeath":"*taunt",CHAN_VOICE);
-				onr.A_AlertMonsters();
-				onr.dropinventory(self);
-			}
-		}
-	}
 	
 	override string,double getpickupsprite(){return "KRDRA0",1.;}
 	
@@ -251,14 +143,6 @@ class HDKharon:HD_PB_UnarmedWeapon{
 		;
 	}
 	
-	override void DoEffect(){
-		super.DoEffect();
-		if(targettimer<70)targettimer++;else{
-			tracer=null;
-			targettimer=0;
-			targethealth=0;
-		}
-	}
 	action void HDPunchKharon(int dmg, int pb_angle=0, int pb_rotation=0, 
 							int pb_pitch=0,class<Actor> pb_pufftype="HDKharonSpark"){
 		flinetracedata punchline;
