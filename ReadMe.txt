@@ -1,3 +1,9 @@
+This version of the mod is outdated and unsupported, but being kept for archival purposes. For an updated version of the mod, see below:
+https://github.com/Potetobloke/PB_HDAddon_Bangers-And-Mash
+
+
+
+
 You need BulletLib to run this mod.
 I'm not particularly active in HDest at the moment, but if you ping me on the HDest Discord, I'll respond to ya.
 
